@@ -1,0 +1,8 @@
+item {
+    id: 1
+    name: 'bus'
+}
+item {
+    id: 2
+    name: 'person'
+}

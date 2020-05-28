@@ -1,0 +1,25 @@
+{
+    "deep_sort" : {
+        "max_cosine_distance" : 0.5,
+        "nn_budget" : null,
+        "nms_max_overlap" : 0.4,
+        "model_filename" : "addons/deep_sort/model/mars-small128.pb"
+    },
+    "model_filename" : "../saved_models/frozen_inference_graph.pb",
+    "min_confidence" : 0.7,
+    "format_video_to_save" : {
+        "fps" : 25,
+        "width" : 1920,
+        "height" : 1080
+    },
+    "bus" : {
+        "count_to_change_state" : 20,
+        "min_distance" : 0.1,
+        "distance_per_sec" : 1,
+        "nn_age" : 10
+    },
+    "person" : {
+        "nn_age" : 10,
+        "count_to_be_tracked_after_crossed" : 30
+    }
+ }

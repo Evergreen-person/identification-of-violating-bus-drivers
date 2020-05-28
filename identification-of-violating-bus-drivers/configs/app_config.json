@@ -5,8 +5,8 @@
         "nms_max_overlap" : 0.4,
         "model_filename" : "addons/deep_sort/model/mars-small128.pb"
     },
-    "model_filename" : "../saved_models/frozen_inference_graph.pb",
-    "min_confidence" : 0.7,
+    "model_filename" : "../saved_models/faster_rcnn_resnet100/frozen_inference_graph.pb",
+    "min_confidence" : 0.9,
     "format_video_to_save" : {
         "fps" : 25,
         "width" : 1920,

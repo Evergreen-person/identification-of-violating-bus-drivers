@@ -2,7 +2,7 @@ import argparse
 import json
 import os
 import glob
-from test_alg import scan_video
+from algorithm import scan_video
 
 
 def parse_config(file):

@@ -2,13 +2,15 @@
   "roads": [
     {
       "xpoints": [0, 0.8453125, 0.86979, 0.8078],
-      "ypoints": [1, 0.05, 0.5, 1],
-      "npoints": 4
+      "ypoints": [1, 0.05, 0.05, 1],
+      "npoints": 4,
+      "doors" : "right"
     },
     {
       "xpoints": [0, 0.8453125, 0.8255208333333334, 0],
       "ypoints": [1.0, 0.05, 0.05, 0.5185185185185185],
-      "npoints": 4
+      "npoints": 4,
+      "doors" : "left"
     }
   ],
   "bus_stops": [

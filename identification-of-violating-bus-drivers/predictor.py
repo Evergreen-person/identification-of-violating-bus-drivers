@@ -35,3 +35,7 @@ class Predictor:
         output_dict['detection_boxes'] = output_dict['detection_boxes'][0]
         output_dict['detection_scores'] = output_dict['detection_scores'][0]
         return output_dict
+
+    def __del__(self):
+        tf.reset_default_graph()
+        self.session.close()

@@ -5,7 +5,7 @@ import argparse
 import tensorflow as tf
 import warnings
 from math import hypot
-from shapely.geometry import box
+from shapely.geometry import box, Polygon
 from predictor import Predictor
 from bus import Bus
 from person import Person
@@ -43,11 +43,19 @@ def split_to_buses_and_persons(prediction, min_score, width, heigth):
                 raise ValueError('Unknown class: ' + str(clazz))
     return bus_boxes, bus_scores, person_boxes, person_scores
 
+def belongsToBusStop(part, stops, w, h):
+    for stop in stops:
+        points = [(int(x*w),int(h*y)) for x, y in zip(stop['xpoints'], stop['ypoints'])]
+        if Polygon(points).intersects(part):
+            return True
+    return False
+
 
 def scan_video(
         input,
         output,
         is_show,
+        skip_frames,
         model_filename,
         min_confidence,
         video_fps,
@@ -59,8 +67,10 @@ def scan_video(
         bus_min_distance,
         bus_distance_per_sec,
         bus_nn_age,
-        person_count_to_be_tracked_after_crossed,
-        person_nn_age):
+        bus_zoom_in_x,
+        bus_bottom_part,
+        person_nn_age,
+        geometry):
 
     predictor = Predictor(model_filename)
 
@@ -75,7 +85,7 @@ def scan_video(
 
     if output:
         fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
-        out = cv2.VideoWriter(output, fourcc, fps, (video_width, video_height))
+        out = cv2.VideoWriter(output, fourcc, 5, (video_width, video_height))
         frame_index = -1
 
     frame_id = -1
@@ -87,23 +97,37 @@ def scan_video(
                             partial(Bus,
                                     counter_to_change_state=bus_count_to_change_state,
                                     min_distance=bus_min_distance,
-                                    last_points=bus_distance_per_sec * fps,
-                                    age=bus_nn_age))
+                                    dist_persec=bus_distance_per_sec,
+                                    nn_age=bus_nn_age,
+                                    fps=fps))
     tracked_persons = Tracked('PERSON',
                               deep_sort_model_filename,
                               deep_sort_max_cosine_distance,
                               None,
                               partial(Person,
-                                      last_points=50,
-                                      is_show=False,
-                                      count_to_be_shown=person_count_to_be_tracked_after_crossed,
-                                      age=person_nn_age))
+                                      fps=fps,
+                                      nnage=person_nn_age))
 
+    roads = []
+    for road in geometry['roads']:
+        points = [(int(x*width),int(heigth*y)) for x, y in zip(road['xpoints'], road['ypoints'])]
+        roads.append(Polygon(points))
+
+    skip_counter = 4
     while True:
         ok, frame = video.read()
         if not ok:
             break
         frame_id = frame_id + 1
+
+        if frame_id < skip_frames:
+            continue
+
+        if skip_counter != 0:
+            skip_counter -= 1
+            continue
+        else:
+            skip_counter = 4
 
         prediction = predictor(frame)
         bus_boxes, bus_scores, person_boxes, person_scores = split_to_buses_and_persons(
@@ -115,13 +139,20 @@ def scan_video(
         for btrack in tracked_buses.tracker.tracks:
             if tracked_buses.values[btrack.track_id].is_stopped:
                 bxmin, bymin, bxmax, bymax = btrack.to_tlbr()
-                brect = box(bxmin, bymin, bxmax, bymax)
+                scale = (bxmax - bxmin) * bus_zoom_in_x
+                brect = box(bxmin - scale, bymin, bxmax + scale, bymax)
+                downbrect = box(bxmin, bymax - (bymax - bymin)*0.1, bxmax, bymax)
+                belongsToRoadIndex = np.argmax([downbrect.intersection(road).area for road in roads])
                 for ptrack in tracked_persons.tracker.tracks:
                     if not ptrack.time_since_update > 0:
                         pxmin, pymin, pxmax, pymax = ptrack.to_tlbr()
-                        if box(pxmin, pymin, pxmax, pymax).intersects(brect) and (pymax < bymax + (bymax - bymin) * 0.1):
+                        downprect = box(pxmin, pymax - (pymax - pymin)*0.1, pxmax, pymax)                    
+                        if box(pxmin, pymin, pxmax, pymax).intersects(brect) and \
+                            (pymax < bymax + (bymax - bymin)) and \
+                            (pymax > bymax - (bymax - bymin) * bus_bottom_part) and \
+                            not belongsToBusStop(downprect, geometry['bus_stops'], width, heigth):
                             tracked_persons.values[ptrack.track_id].set_crossed(
-                                btrack.track_id, frame_id)
+                                btrack.track_id, frame_id, geometry['roads'][belongsToRoadIndex]['doors'])
 
         tracked_persons.tick()
         tracked_buses.tick()
@@ -133,6 +164,7 @@ def scan_video(
             draw_events(frame, frame_id, events)
             draw_legend(frame, tracked_persons)
             draw_legend(frame, tracked_buses)
+            draw_geometry(frame, geometry, width, heigth)
 
             frame = cv2.resize(frame, (video_width, video_height), fx=0, fy=0,
                                interpolation=cv2.INTER_CUBIC)
@@ -152,63 +184,7 @@ def scan_video(
 
     events = tracked_persons.events()
     # events.extend(tracked_buses.events())
-
+    del predictor
+    del tracked_buses
+    del tracked_persons
     return events
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="IT MAKES MIRACLE")
-    parser.add_argument(
-        "-i",
-        "--input",
-        help='Path to vidio file',
-        type=str
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        type=str
-    )
-    parser.add_argument(
-        "--show",
-        default=False,
-        type=bool
-    )
-    parser.add_argument(
-        '--config',
-        help='Configuration file in JSON',
-        required=True
-    )
-    parser.add_argument(
-        '--log'
-    )
-    args = parser.parse_args()
-    conf = parse_config(args.config)
-    video_conf = conf['format_video_to_save']
-    bus_conf = conf['bus']
-    person_conf = conf['person']
-    deep_sort_conf = conf['deep_sort']
-    events = scan_video(args.input,
-                        args.output,
-                        args.show,
-                        conf['model_filename'],
-                        conf['min_confidence'],
-                        video_conf['fps'],
-                        video_conf['width'],
-                        video_conf['height'],
-                        deep_sort_conf['max_cosine_distance'],
-                        deep_sort_conf['model_filename'],
-                        bus_conf['count_to_change_state'],
-                        bus_conf["min_distance"],
-                        bus_conf["distance_per_sec"],
-                        bus_conf["nn_age"],
-                        person_conf['count_to_be_tracked_after_crossed'],
-                        person_conf['nn_age'])
-
-    if args.log:
-        write_events(args.log, events)
-
-
-if __name__ == '__main__':
-    main()

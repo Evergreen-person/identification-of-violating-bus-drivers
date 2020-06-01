@@ -33,6 +33,7 @@ def main():
         '--skip',
         help='Skip first N frames',
         required=False,
+        type=int,
         default=0
     )
     args = parser.parse_args()

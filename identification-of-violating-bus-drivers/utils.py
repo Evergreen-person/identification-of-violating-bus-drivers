@@ -14,7 +14,7 @@ def draw_legend(frame, tracked, last_points=40):
     for track in tracked.tracker.tracks:
         if not track.time_since_update > 0:
             bbox = track.to_tlbr()
-            color = [int(c) for c in COLORS[track.track_id % 255]]
+            color = [int(c) for c in COLORS[track.track_id % 200]]
             cv2.rectangle(frame, (int(bbox[0]), int(
                 bbox[1])), (int(bbox[2]), int(bbox[3])), (color), 3)
             cv2.putText(frame, f'{tracked.name}_{track.track_id}', (int(bbox[0]), int(

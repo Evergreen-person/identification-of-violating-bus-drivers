@@ -29,7 +29,7 @@ def run_test(input,
 
     print(f'[INFO] run test for {input}')
     events = scan_video(input,
-                        False,
+                        output + '.avi',
                         False,
                         0,
                         model_filename,

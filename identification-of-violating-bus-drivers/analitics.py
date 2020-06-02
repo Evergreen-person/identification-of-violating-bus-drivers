@@ -18,9 +18,9 @@ def stat(ground_truth_file, gain_result_file):
         all_cases += saved_count
         count = 0
         for index, row in grouped.iterrows():
-            #if (row[('frame', 'amin')] >= grow['frame_start']) and (row[('frame', 'amax')] <= grow['frame_end']):
-            if (row[('frame', 'amin')] >= grow['frame_start']) and (row[('frame', 'amin')] <= grow['frame_end']) or \
-                (row[('frame', 'amax')] >= grow['frame_start']) and (row[('frame', 'amax')] <= grow['frame_end']):
+            if (row[('frame', 'amin')] >= grow['frame_start']) and (row[('frame', 'amax')] <= grow['frame_end']):
+            #if (row[('frame', 'amin')] >= grow['frame_start']) and (row[('frame', 'amin')] <= grow['frame_end']) or \
+            #    (row[('frame', 'amax')] >= grow['frame_start']) and (row[('frame', 'amax')] <= grow['frame_end']):
                 count += 1
                 handled.append(index)
         TP += min([saved_count, count])

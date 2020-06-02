@@ -148,7 +148,7 @@ def scan_video(
                         pxmin, pymin, pxmax, pymax = ptrack.to_tlbr()
                         downprect = box(pxmin, pymax - (pymax - pymin)*0.1, pxmax, pymax)                    
                         if box(pxmin, pymin, pxmax, pymax).intersects(brect) and \
-                            (pymax < bymax + (bymax - bymin)) and \
+                            (pymax < bymax) and \
                             (pymax > bymax - (bymax - bymin) * bus_bottom_part) and \
                             not belongsToBusStop(downprect, geometry['bus_stops'], width, heigth):
                             tracked_persons.values[ptrack.track_id].set_crossed(

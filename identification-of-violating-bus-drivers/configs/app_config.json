@@ -13,8 +13,8 @@
         "height" : 1080
     },
     "bus" : {
-        "count_to_change_state" : 3,
-        "min_distance" : 0.03,
+        "count_to_change_state" : 5,
+        "min_distance" : 0.032,
         "distance_per_sec" : 1,
         "nn_age" : 2,
         "zoom_in_x" : 0.1,
